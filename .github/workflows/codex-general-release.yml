@@ -1,0 +1,194 @@
+name: codex-general-release
+
+on:
+  push:
+    tags:
+      - "rust-v*.*.*"
+
+concurrency:
+  group: codex-general-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  tag-check:
+    if: ${{ github.repository == 'timwhitez/codex-general' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Validate tag matches Cargo.toml version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          [[ "${GITHUB_REF_TYPE}" == "tag" ]] || { echo "Not a tag push"; exit 1; }
+          [[ "${GITHUB_REF_NAME}" =~ ^rust-v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta)(\.[0-9]+)?)?$ ]] ||
+            { echo "Tag '${GITHUB_REF_NAME}' does not match expected format"; exit 1; }
+
+          tag_ver="${GITHUB_REF_NAME#rust-v}"
+          cargo_ver="$(grep -m1 '^version' codex-rs/Cargo.toml | sed -E 's/version *= *"([^"]+)".*/\1/')"
+          [[ "${tag_ver}" == "${cargo_ver}" ]] ||
+            { echo "Tag ${tag_ver} does not match Cargo.toml ${cargo_ver}"; exit 1; }
+
+          echo "version=${tag_ver}" >> "$GITHUB_OUTPUT"
+
+  build-linux-x64:
+    needs: tag-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: codex-rs
+    env:
+      TARGET: x86_64-unknown-linux-musl
+      CARGO_PROFILE_RELEASE_LTO: thin
+      AWS_LC_SYS_NO_JITTER_ENTROPY: "1"
+      AWS_LC_SYS_NO_JITTER_ENTROPY_x86_64_unknown_linux_musl: "1"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install Linux build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends pkg-config libcap-dev zstd
+
+      - uses: dtolnay/rust-toolchain@a0b273b48ed29de4470960879e8381ff45632f26 # 1.93.0
+        with:
+          targets: ${{ env.TARGET }}
+
+      - name: Use hermetic Cargo home
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo_home="${GITHUB_WORKSPACE}/.cargo-home"
+          mkdir -p "${cargo_home}/bin"
+          echo "CARGO_HOME=${cargo_home}" >> "$GITHUB_ENV"
+          echo "${cargo_home}/bin" >> "$GITHUB_PATH"
+          : > "${cargo_home}/config.toml"
+
+      - name: Install Zig
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: 0.14.0
+          use-cache: false
+
+      - name: Install musl build tools
+        env:
+          TARGET: ${{ env.TARGET }}
+        run: bash "${GITHUB_WORKSPACE}/.github/scripts/install-musl-build-tools.sh"
+
+      - name: Configure musl rusty_v8 artifact overrides and verify checksums
+        uses: ./.github/actions/setup-rusty-v8-musl
+        with:
+          target: ${{ env.TARGET }}
+
+      - name: Build bundled bwrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --target "$TARGET" --release --bin bwrap
+
+          bwrap_path="target/${TARGET}/release/bwrap"
+          test -x "$bwrap_path"
+          digest="$(sha256sum "$bwrap_path" | awk '{print $1}')"
+          echo "CODEX_BWRAP_SHA256=${digest}" >> "$GITHUB_ENV"
+          echo "Built bwrap with sha256:${digest}"
+
+      - name: Build Codex General
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --target "$TARGET" --release --bin codex-general
+
+      - name: Verify binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          "target/${TARGET}/release/codex-general" --version
+          test -x "target/${TARGET}/release/bwrap"
+
+      - name: Build installer package archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash "${GITHUB_WORKSPACE}/.github/scripts/build-codex-package-archive.sh" \
+            --target "$TARGET" \
+            --bundle primary \
+            --entrypoint-dir "target/${TARGET}/release" \
+            --archive-dir "dist/${TARGET}"
+
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codex-general-linux-x64
+          path: codex-rs/dist/x86_64-unknown-linux-musl/*
+          if-no-files-found: error
+
+  release:
+    needs:
+      - tag-check
+      - build-linux-x64
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: codex-general-linux-x64
+          path: dist
+
+      - name: Stage release assets
+        shell: bash
+        env:
+          VERSION: ${{ needs.tag-check.outputs.version }}
+        run: |
+          set -euo pipefail
+          cp scripts/install/install.sh dist/install.sh
+          cp scripts/install/install.ps1 dist/install.ps1
+
+          (
+            cd dist
+            sha256sum codex-package-*.tar.gz > codex-package_SHA256SUMS
+            sha256sum * > SHA256SUMS
+          )
+
+          cat > release-notes.md <<EOF
+          Codex General ${VERSION}
+
+          Built by GitHub Actions from ${GITHUB_SHA}.
+
+          Assets in this fork release:
+          - codex-package-x86_64-unknown-linux-musl.tar.gz
+          - codex-package-x86_64-unknown-linux-musl.tar.zst
+          - install.sh / install.ps1
+          - SHA-256 checksum manifests
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+        with:
+          name: Codex General ${{ needs.tag-check.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+          body_path: release-notes.md
+          files: dist/*
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          make_latest: true
