@@ -1744,7 +1744,7 @@ command = "enabled-server"
     #[test]
     fn subagent_preserves_default_model_when_source_model_is_present() {
         let document = parse_document_content(
-            "---\nname: reviewer\ndescription: Review code\nmodel: source-opus\neffort: max\n---\nReview carefully.\n",
+            "---\nname: validator\ndescription: Validate code\nmodel: source-opus\neffort: max\n---\nValidate carefully.\n",
         );
         let metadata = agent_metadata(&document).expect("metadata");
         let rendered: TomlValue =
@@ -1752,11 +1752,11 @@ command = "enabled-server"
                 .expect("parse rendered agent");
         let expected: TomlValue = toml::from_str(
             r#"
-name = "reviewer"
-description = "Review code"
+name = "validator"
+description = "Validate code"
 model_reasoning_effort = "xhigh"
 developer_instructions = """
-Review carefully."""
+Validate carefully."""
 "#,
         )
         .expect("parse expected agent");
@@ -1778,7 +1778,7 @@ Review carefully."""
     #[test]
     fn frontmatter_accepts_crlf_delimiters() {
         let document = parse_document_content(
-            "---\r\nname: reviewer\r\ndescription: Review code\r\n---\r\nReview carefully.\r\n",
+            "---\r\nname: validator\r\ndescription: Validate code\r\n---\r\nValidate carefully.\r\n",
         );
 
         assert_eq!(
@@ -1794,9 +1794,9 @@ Review carefully."""
                 document.body.as_str(),
             ),
             (
-                Some("reviewer"),
-                Some("Review code"),
-                "Review carefully.\r\n"
+                Some("validator"),
+                Some("Validate code"),
+                "Validate carefully.\r\n"
             )
         );
     }

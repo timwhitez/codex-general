@@ -19,7 +19,7 @@ use tokio::process::Command;
 pub(crate) fn managed_codex_bin(codex_home: &Path) -> PathBuf {
     codex_home
         .join("packages")
-        .join("standalone")
+        .join("codex-general-standalone")
         .join("current")
         .join(managed_codex_file_name())
 }
@@ -85,7 +85,11 @@ pub(crate) fn executable_identity_from_bytes(bytes: &[u8]) -> ExecutableIdentity
 }
 
 fn managed_codex_file_name() -> &'static str {
-    if cfg!(windows) { "codex.exe" } else { "codex" }
+    if cfg!(windows) {
+        "codex-general.exe"
+    } else {
+        "codex-general"
+    }
 }
 
 #[cfg(unix)]

@@ -2002,7 +2002,7 @@ async fn list_agent_subtree_thread_ids_includes_anonymous_and_closed_descendants
     let harness = AgentControlHarness::new().await;
     let (parent_thread_id, _parent_thread) = harness.start_thread().await;
     let worker_path = AgentPath::root().join("worker").expect("worker path");
-    let reviewer_path = AgentPath::root().join("reviewer").expect("reviewer path");
+    let validator_path = AgentPath::root().join("validator").expect("validator path");
 
     let worker_thread_id = harness
         .control
@@ -2068,21 +2068,21 @@ async fn list_agent_subtree_thread_ids_includes_anonymous_and_closed_descendants
         )
         .await
         .expect("no-path grandchild spawn should succeed");
-    let _reviewer_thread_id = harness
+    let _validator_thread_id = harness
         .control
         .spawn_agent(
             harness.config.clone(),
-            text_input("hello reviewer"),
+            text_input("hello validator"),
             Some(SessionSource::SubAgent(SubAgentSource::ThreadSpawn {
                 parent_thread_id,
                 depth: 1,
-                agent_path: Some(reviewer_path),
+                agent_path: Some(validator_path),
                 agent_nickname: None,
-                agent_role: Some("reviewer".to_string()),
+                agent_role: Some("validator".to_string()),
             })),
         )
         .await
-        .expect("reviewer spawn should succeed");
+        .expect("validator spawn should succeed");
 
     let _ = harness
         .control

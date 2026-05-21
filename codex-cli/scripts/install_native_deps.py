@@ -14,13 +14,12 @@ from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 import sys
-from typing import Iterable, Sequence
+from typing import Sequence
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 CODEX_CLI_ROOT = SCRIPT_DIR.parent
-DEFAULT_WORKFLOW_URL = "https://github.com/openai/codex/actions/runs/26131514935"  # rust-v0.132.0
 VENDOR_DIR_NAME = "vendor"
 RG_MANIFEST = CODEX_CLI_ROOT / "bin" / "rg"
 BINARY_TARGETS = (
@@ -36,10 +35,11 @@ CODEX_PACKAGE_COMPONENT = "codex-package"
 
 @dataclass(frozen=True)
 class BinaryComponent:
-    artifact_prefix: str  # matches the artifact filename prefix (e.g. codex-<target>.zst)
+    artifact_prefix: str  # matches the artifact filename prefix (e.g. codex-general-<target>.zst)
     dest_dir: str  # directory under vendor/<target>/ where the binary is installed
     binary_basename: str  # executable name inside dest_dir (before optional .exe)
     targets: tuple[str, ...] | None = None  # limit installation to specific targets
+    artifact_prefix_fallbacks: tuple[str, ...] = ()
 
 
 WINDOWS_TARGETS = tuple(target for target in BINARY_TARGETS if "windows" in target)
@@ -53,9 +53,10 @@ BINARY_COMPONENTS = {
         targets=LINUX_TARGETS,
     ),
     "codex": BinaryComponent(
-        artifact_prefix="codex",
+        artifact_prefix="codex-general",
         dest_dir="codex",
-        binary_basename="codex",
+        binary_basename="codex-general",
+        artifact_prefix_fallbacks=("codex",),
     ),
     "codex-responses-api-proxy": BinaryComponent(
         artifact_prefix="codex-responses-api-proxy",
@@ -131,9 +132,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Install native Codex binaries.")
     parser.add_argument(
         "--workflow-url",
+        required=True,
         help=(
-            "GitHub Actions workflow URL that produced the artifacts. Defaults to a "
-            "known good run when omitted."
+            "GitHub Actions workflow URL that produced the codex-general artifacts."
         ),
     )
     parser.add_argument(
@@ -152,8 +153,7 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Allow codex-package to be synthesized from legacy per-binary artifacts "
             "when package archives are missing. Intended for CI compatibility only; "
-            "release staging should not use this. Automatically enabled for the "
-            "built-in default workflow."
+            "release staging should not use this."
         ),
     )
     parser.add_argument(
@@ -177,9 +177,7 @@ def main() -> int:
 
     components = args.components or [CODEX_PACKAGE_COMPONENT, "codex-responses-api-proxy"]
 
-    workflow_override = (args.workflow_url or "").strip()
-    use_default_workflow = not workflow_override
-    workflow_url = workflow_override or DEFAULT_WORKFLOW_URL
+    workflow_url = args.workflow_url.strip()
 
     workflow_id = workflow_url.rstrip("/").split("/")[-1]
     print(f"Downloading native artifacts from workflow {workflow_id}...")
@@ -192,7 +190,7 @@ def main() -> int:
                 try:
                     install_codex_package_archives(artifacts_dir, vendor_dir, BINARY_TARGETS)
                 except FileNotFoundError:
-                    if not (args.allow_legacy_codex_package or use_default_workflow):
+                    if not args.allow_legacy_codex_package:
                         raise
                     install_legacy_codex_package_layouts(
                         artifacts_dir,
@@ -313,8 +311,8 @@ def _build_legacy_codex_package_layout(
     path_dir.mkdir()
 
     shutil.copy2(
-        legacy_target_dir / "codex" / f"codex{exe_suffix}",
-        bin_dir / f"codex{exe_suffix}",
+        legacy_target_dir / "codex" / f"codex-general{exe_suffix}",
+        bin_dir / f"codex-general{exe_suffix}",
     )
     shutil.copy2(
         legacy_target_dir / "path" / f"rg{exe_suffix}",
@@ -336,8 +334,8 @@ def _build_legacy_codex_package_layout(
             "layoutVersion": 1,
             "version": "unknown",
             "target": target,
-            "variant": "codex",
-            "entrypoint": f"bin/codex{exe_suffix}",
+            "variant": "codex-general",
+            "entrypoint": f"bin/codex-general{exe_suffix}",
             "resourcesDir": "codex-resources",
             "pathDir": "codex-path",
         },
@@ -420,7 +418,7 @@ def _download_artifacts(workflow_id: str, dest_dir: Path) -> None:
         "--dir",
         str(dest_dir),
         "--repo",
-        "openai/codex",
+        "timwhitez/codex-general",
         workflow_id,
     ]
     subprocess.check_call(cmd)
@@ -465,7 +463,11 @@ def _install_single_binary(
     component: BinaryComponent,
 ) -> Path:
     artifact_subdir = artifact_dir_for_target(artifacts_dir, target)
-    archive_path = legacy_binary_archive_path(artifact_subdir, component.artifact_prefix, target)
+    archive_path = legacy_binary_archive_path(
+        artifact_subdir,
+        (component.artifact_prefix, *component.artifact_prefix_fallbacks),
+        target,
+    )
 
     dest_dir = vendor_dir / target / component.dest_dir
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -487,10 +489,16 @@ def _archive_name_for_target(artifact_prefix: str, target: str) -> str:
     return f"{artifact_prefix}-{target}.zst"
 
 
-def legacy_binary_archive_path(artifact_dir: Path, artifact_prefix: str, target: str) -> Path:
-    archive_names = [_archive_name_for_target(artifact_prefix, target)]
-    if artifact_dir.name == f"{target}-unsigned":
-        archive_names.append(_archive_name_for_target(artifact_prefix, f"{target}-unsigned"))
+def legacy_binary_archive_path(
+    artifact_dir: Path, artifact_prefixes: Sequence[str], target: str
+) -> Path:
+    archive_names = []
+    for artifact_prefix in artifact_prefixes:
+        archive_names.append(_archive_name_for_target(artifact_prefix, target))
+        if artifact_dir.name == f"{target}-unsigned":
+            archive_names.append(
+                _archive_name_for_target(artifact_prefix, f"{target}-unsigned")
+            )
 
     for archive_name in archive_names:
         archive_path = artifact_dir / archive_name

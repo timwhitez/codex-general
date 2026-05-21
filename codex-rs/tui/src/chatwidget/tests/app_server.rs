@@ -587,7 +587,7 @@ async fn live_app_server_collab_wait_items_render_history() {
     chat.set_collab_agent_metadata(
         other_receiver_thread_id,
         Some("Ada".to_string()),
-        Some("reviewer".to_string()),
+        Some("validator".to_string()),
     );
 
     chat.handle_server_notification(

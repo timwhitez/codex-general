@@ -1,4 +1,4 @@
-//! Code-review flow state for `ChatWidget`.
+//! Review flow state for `ChatWidget`.
 
 use crate::auto_review_denials::RecentAutoReviewDenials;
 use crate::token_usage::TokenUsageInfo;

@@ -25,9 +25,9 @@ classifiers = [
 dependencies = ["pydantic>=2.12", "openai-codex-cli-bin==0.131.0a4"]
 
 [project.urls]
-Homepage = "https://github.com/openai/codex"
-Repository = "https://github.com/openai/codex"
-Issues = "https://github.com/openai/codex/issues"
+Homepage = "https://github.com/timwhitez/codex-general"
+Repository = "https://github.com/timwhitez/codex-general"
+Issues = "https://github.com/timwhitez/codex-general/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "datamodel-code-generator==0.31.2", "ruff>=0.15.8"]

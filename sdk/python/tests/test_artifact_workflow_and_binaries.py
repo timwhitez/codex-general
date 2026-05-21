@@ -42,7 +42,7 @@ def _write_fake_codex_package(package_dir: Path, script) -> Path:
     (package_dir / "bin").mkdir(parents=True)
     (package_dir / "codex-resources").mkdir()
     (package_dir / "codex-path").mkdir()
-    (package_dir / "codex-package.json").write_text('{"variant":"codex"}\n')
+    (package_dir / "codex-package.json").write_text('{"variant":"codex-general"}\n')
     (package_dir / "bin" / script.runtime_binary_name()).write_text("fake codex\n")
     (package_dir / "codex-resources" / "bwrap").write_text("fake bwrap\n")
     (package_dir / "codex-path" / "rg").write_text("fake rg\n")
@@ -406,7 +406,7 @@ def test_stage_runtime_release_copies_package_layout_and_sets_version(
         "bwrap": (package_root / "codex-resources" / "bwrap").read_text(),
         "rg": (package_root / "codex-path" / "rg").read_text(),
     } == {
-        "metadata": '{"variant":"codex"}\n',
+        "metadata": '{"variant":"codex-general"}\n',
         "codex": "fake codex\n",
         "bwrap": "fake bwrap\n",
         "rg": "fake rg\n",
@@ -662,7 +662,9 @@ def test_default_runtime_is_resolved_from_installed_runtime_package(
 ) -> None:
     from openai_codex import client as client_module
 
-    fake_binary = tmp_path / ("codex.exe" if client_module.os.name == "nt" else "codex")
+    fake_binary = tmp_path / (
+        "codex-general.exe" if client_module.os.name == "nt" else "codex-general"
+    )
     fake_binary.write_text("")
     ops = client_module.CodexBinResolverOps(
         installed_codex_path=lambda: fake_binary,

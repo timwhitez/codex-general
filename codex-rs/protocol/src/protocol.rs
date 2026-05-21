@@ -3892,9 +3892,9 @@ mod tests {
     fn inter_agent_communication_response_input_item_preserves_commentary_phase() {
         let communication = InterAgentCommunication {
             author: AgentPath::root(),
-            recipient: AgentPath::root().join("reviewer").expect("recipient path"),
+            recipient: AgentPath::root().join("validator").expect("recipient path"),
             other_recipients: vec![AgentPath::root().join("worker").expect("recipient path")],
-            content: "review the diff".to_string(),
+            content: "validate the diff".to_string(),
             trigger_turn: true,
         };
 

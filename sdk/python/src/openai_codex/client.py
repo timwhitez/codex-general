@@ -184,7 +184,7 @@ class AppServerConfig:
 
 
 class AppServerClient:
-    """Synchronous typed JSON-RPC client for `codex app-server` over stdio."""
+    """Synchronous typed JSON-RPC client for `codex-general app-server` over stdio."""
 
     def __init__(
         self,

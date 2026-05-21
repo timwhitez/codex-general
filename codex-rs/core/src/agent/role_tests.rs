@@ -58,7 +58,7 @@ async fn apply_role_defaults_to_default_and_leaves_config_unchanged() {
 
     apply_role_to_config(&mut config, /*role_name*/ None)
         .await
-        .expect("default role should apply");
+        .expect("orchestrator role should apply");
 
     assert_eq!(before, config);
 }
@@ -72,21 +72,6 @@ async fn apply_role_returns_error_for_unknown_role() {
         .expect_err("unknown role should fail");
 
     assert_eq!(err, "unknown agent_type 'missing-role'");
-}
-
-#[tokio::test]
-#[ignore = "No role requiring it for now"]
-async fn apply_explorer_role_sets_model_and_adds_session_flags_layer() {
-    let (_home, mut config) = test_config_with_cli_overrides(Vec::new()).await;
-    let before_layers = session_flags_layer_count(&config);
-
-    apply_role_to_config(&mut config, Some("explorer"))
-        .await
-        .expect("explorer role should apply");
-
-    assert_eq!(config.model.as_deref(), Some("gpt-5.4-mini"));
-    assert_eq!(config.model_reasoning_effort, Some(ReasoningEffort::Medium));
-    assert_eq!(session_flags_layer_count(&config), before_layers + 1);
 }
 
 #[tokio::test]
@@ -739,7 +724,7 @@ enabled = false
 fn spawn_tool_spec_build_deduplicates_user_defined_built_in_roles() {
     let user_defined_roles = BTreeMap::from([
         (
-            "explorer".to_string(),
+            "worker".to_string(),
             AgentRoleConfig {
                 description: Some("user override".to_string()),
                 config_file: None,
@@ -752,9 +737,11 @@ fn spawn_tool_spec_build_deduplicates_user_defined_built_in_roles() {
     let spec = spawn_tool_spec::build(&user_defined_roles);
 
     assert!(spec.contains("researcher: no description"));
-    assert!(spec.contains("explorer: {\nuser override\n}"));
-    assert!(spec.contains("default: {\nDefault agent.\n}"));
-    assert!(!spec.contains("Explorers are fast and authoritative."));
+    assert!(spec.contains("worker: {\nuser override\n}"));
+    assert!(spec.contains("orchestrator: {\nThe orchestrator plans and decomposes"));
+    assert!(spec.contains("validator: {\nValidators evaluate completed work"));
+    assert!(spec.contains("awaiter: {\nUse an awaiter agent"));
+    assert!(!spec.contains("Workers complete well-specified features"));
 }
 
 #[test]
@@ -771,7 +758,7 @@ fn spawn_tool_spec_lists_user_defined_roles_before_built_ins() {
     let spec = spawn_tool_spec::build(&user_defined_roles);
     let user_index = spec.find("aaa: {\nfirst\n}").expect("find user role");
     let built_in_index = spec
-        .find("default: {\nDefault agent.\n}")
+        .find("orchestrator: {\nThe orchestrator plans and decomposes")
         .expect("find built-in role");
 
     assert!(user_index < built_in_index);
@@ -805,16 +792,16 @@ fn spawn_tool_spec_marks_role_locked_model_and_reasoning_effort() {
 #[test]
 fn spawn_tool_spec_marks_role_locked_reasoning_effort_only() {
     let tempdir = TempDir::new().expect("create temp dir");
-    let role_path = tempdir.path().join("reviewer.toml");
+    let role_path = tempdir.path().join("validator.toml");
     fs::write(
         &role_path,
-        "developer_instructions = \"Review carefully\"\nmodel_reasoning_effort = \"medium\"\n",
+        "developer_instructions = \"Validate carefully\"\nmodel_reasoning_effort = \"medium\"\n",
     )
     .expect("write role config");
     let user_defined_roles = BTreeMap::from([(
-        "reviewer".to_string(),
+        "validator".to_string(),
         AgentRoleConfig {
-            description: Some("Review carefully.".to_string()),
+            description: Some("Validate carefully.".to_string()),
             config_file: Some(role_path),
             nickname_candidates: None,
         },
@@ -823,7 +810,7 @@ fn spawn_tool_spec_marks_role_locked_reasoning_effort_only() {
     let spec = spawn_tool_spec::build(&user_defined_roles);
 
     assert!(spec.contains(
-            "Review carefully.\n- This role's reasoning effort is set to `medium` and cannot be changed."
+            "Validate carefully.\n- This role's reasoning effort is set to `medium` and cannot be changed."
         ));
 }
 
@@ -853,9 +840,18 @@ fn spawn_tool_spec_marks_role_locked_service_tier() {
 }
 
 #[test]
-fn built_in_config_file_contents_resolves_explorer_only() {
+fn built_in_config_file_contents_resolves_embedded_files() {
     assert_eq!(
         built_in::config_file_contents(Path::new("missing.toml")),
         None
+    );
+    assert_eq!(
+        built_in::config_file_contents(Path::new("explorer.toml")),
+        Some("")
+    );
+    assert!(
+        built_in::config_file_contents(Path::new("awaiter.toml"))
+            .expect("awaiter config should be embedded")
+            .contains("You are an awaiter.")
     );
 }

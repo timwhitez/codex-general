@@ -169,9 +169,9 @@ enum InitialOperation {
 
 enum StdinPromptBehavior {
     /// Read stdin only when there is no positional prompt, which is the legacy
-    /// `codex exec` behavior for `codex exec` with piped input.
+    /// `codex-general exec` behavior for `codex-general exec` with piped input.
     RequiredIfPiped,
-    /// Always treat stdin as the prompt, used for the explicit `codex exec -`
+    /// Always treat stdin as the prompt, used for the explicit `codex-general exec -`
     /// sentinel and similar forced-stdin call sites.
     Forced,
     /// If stdin is piped alongside a positional prompt, treat stdin as
@@ -237,7 +237,10 @@ pub async fn run_main(cli: Cli, arg0_paths: Arg0DispatchPaths) -> anyhow::Result
     }
 
     if let Err(err) = set_default_originator("codex_exec".to_string()) {
-        tracing::warn!(?err, "Failed to set codex exec originator override {err:?}");
+        tracing::warn!(
+            ?err,
+            "Failed to set codex-general exec originator override {err:?}"
+        );
     }
 
     let Cli {

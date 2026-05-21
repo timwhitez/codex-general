@@ -35,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--variant",
         choices=sorted(PACKAGE_VARIANTS),
-        default="codex",
+        default="codex-general",
         help="Package variant to build.",
     )
     parser.add_argument(

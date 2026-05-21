@@ -7,16 +7,16 @@ rust_min_stack := "8388608" # 8 MiB
 help:
     just -l
 
-# `codex`
+# `codex-general`
 alias c := codex
 codex *args:
-    cargo run --bin codex -- "$@"
+    cargo run --bin codex-general -- "$@"
 
-# `codex exec`
+# `codex-general exec`
 exec *args:
-    cargo run --bin codex -- exec "$@"
+    cargo run --bin codex-general -- exec "$@"
 
-# Start `codex exec-server` and run codex-tui.
+# Start `codex-general exec-server` and run codex-tui.
 [no-cd]
 tui-with-exec-server *args:
     {{ justfile_directory() }}/scripts/run_tui_with_exec_server.sh "$@"
@@ -28,7 +28,7 @@ file-search *args:
 # Build the CLI and run the app-server test client
 app-server-test-client *args:
     cargo build -p codex-cli
-    cargo run -p codex-app-server-test-client -- --codex-bin ./target/debug/codex "$@"
+    cargo run -p codex-app-server-test-client -- --codex-bin ./target/debug/codex-general "$@"
 
 # Format Rust and Python SDK code.
 fmt:
@@ -60,7 +60,7 @@ test:
 # to ensure that Bazel runs the command in the current working directory.
 [no-cd]
 bazel-codex *args:
-    bazel run //codex-rs/cli:codex --run_under="cd $PWD &&" -- "$@"
+    bazel run //codex-rs/cli:codex-general --run_under="cd $PWD &&" -- "$@"
 
 [no-cd]
 bazel-lock-update:

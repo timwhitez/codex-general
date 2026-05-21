@@ -4,9 +4,9 @@ expression: combined
 ---
 • Waiting for 2 agents
   └ Robie [explorer]
-    Ada [reviewer]
+    Ada [validator]
 
 
 • Finished waiting
   └ Robie [explorer]: Completed - Done
-    Ada [reviewer]: Running
+    Ada [validator]: Running

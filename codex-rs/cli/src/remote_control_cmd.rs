@@ -494,7 +494,7 @@ mod tests {
                 status: AppServerLifecycleStatus::Started,
                 backend: None,
                 pid: Some(42),
-                managed_codex_path: PathBuf::from("/opt/codex/bin/codex"),
+                managed_codex_path: PathBuf::from("/opt/codex-general/bin/codex-general"),
                 managed_codex_version: Some("1.0.0".to_string()),
                 socket_path: PathBuf::from("/tmp/app-server-control.sock"),
                 cli_version: Some("1.0.0".to_string()),
@@ -570,7 +570,7 @@ mod tests {
             ),
             vec![
                 "Daemon used app-server:".to_string(),
-                "  path: /opt/codex/bin/codex".to_string(),
+                "  path: /opt/codex-general/bin/codex-general".to_string(),
                 "  version: 1.0.0".to_string(),
             ]
         );
@@ -606,7 +606,7 @@ mod tests {
                 "daemon": {
                     "status": "started",
                     "pid": 42,
-                    "managedCodexPath": "/opt/codex/bin/codex",
+                    "managedCodexPath": "/opt/codex-general/bin/codex-general",
                     "managedCodexVersion": "1.0.0",
                     "socketPath": "/tmp/app-server-control.sock",
                     "cliVersion": "1.0.0",

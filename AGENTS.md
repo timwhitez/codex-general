@@ -1,5 +1,18 @@
 # Rust/codex-rs
 
+## Codex General modifications
+
+This repository is maintained as the `codex-general` variant. When modifying role,
+prompt, packaging, install, or release behavior, keep these project-specific invariants in sync:
+
+- The user-facing CLI binary is `codex-general`, not `codex`. Update Cargo/Bazel targets, npm package metadata, SDK launchers, installer scripts, release workflows, DotSlash config, docs, tests, and any user-facing command examples together.
+- The managed standalone install tree must remain separate from upstream Codex, using `packages/codex-general-standalone`, so `codex-general` can coexist with an upstream `codex` install on the same machine.
+- The base agent role system is `orchestrator`, `worker`, and `validator`. The default role is `orchestrator`; `worker` owns well-scoped implementation; `validator` evaluates completed work and reports gaps without implementing fixes.
+- `awaiter` is allowed as a built-in support role and should stay aligned with `codex-rs/core/src/agent/builtins/awaiter.toml`. `explorer` remains an empty built-in config unless a task explicitly changes that behavior.
+- Role or persona changes must update all prompt sources and generated prompt metadata together, especially `codex-rs/protocol/src/prompts/base_instructions/default.md`, `codex-rs/models-manager/prompt.md`, `codex-rs/models-manager/models.json`, and model instruction templates.
+- After role/persona work, scan for stale base-persona or role residues such as `coding agent`, `software engineer`, `code-review` default wording, `master`, and agent-role `reviewer`. Functional code-review, approvals reviewer, guardian reviewer, git `master`, and desired `worker` references may remain when they are not agent-persona roles.
+- Do not include local planning files such as `prompt-generalization-plan.md` or `prompt-generalization-update.md` in commits unless the user explicitly asks for them.
+
 In the codex-rs folder where the rust code lives:
 
 - Crate names are prefixed with `codex-`. For example, the `core` folder's crate is named `codex-core`

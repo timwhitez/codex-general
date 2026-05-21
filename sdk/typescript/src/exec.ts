@@ -42,15 +42,15 @@ export type CodexExecArgs = {
 
 const INTERNAL_ORIGINATOR_ENV = "CODEX_INTERNAL_ORIGINATOR_OVERRIDE";
 const TYPESCRIPT_SDK_ORIGINATOR = "codex_sdk_ts";
-const CODEX_NPM_NAME = "@openai/codex";
+const CODEX_NPM_NAME = "codex-general";
 
 const PLATFORM_PACKAGE_BY_TARGET: Record<string, string> = {
-  "x86_64-unknown-linux-musl": "@openai/codex-linux-x64",
-  "aarch64-unknown-linux-musl": "@openai/codex-linux-arm64",
-  "x86_64-apple-darwin": "@openai/codex-darwin-x64",
-  "aarch64-apple-darwin": "@openai/codex-darwin-arm64",
-  "x86_64-pc-windows-msvc": "@openai/codex-win32-x64",
-  "aarch64-pc-windows-msvc": "@openai/codex-win32-arm64",
+  "x86_64-unknown-linux-musl": "codex-general-linux-x64",
+  "aarch64-unknown-linux-musl": "codex-general-linux-arm64",
+  "x86_64-apple-darwin": "codex-general-darwin-x64",
+  "aarch64-apple-darwin": "codex-general-darwin-arm64",
+  "x86_64-pc-windows-msvc": "codex-general-win32-x64",
+  "aarch64-pc-windows-msvc": "codex-general-win32-arm64",
 };
 
 const moduleRequire = createRequire(import.meta.url);
@@ -398,7 +398,7 @@ function findCodexPath(): CodexPathResolution {
     );
   }
 
-  const codexBinaryName = process.platform === "win32" ? "codex.exe" : "codex";
+  const codexBinaryName = process.platform === "win32" ? "codex-general.exe" : "codex-general";
   const nativePackage = resolveNativePackage(vendorRoot, targetTriple, codexBinaryName);
   if (!nativePackage) {
     throw new Error(

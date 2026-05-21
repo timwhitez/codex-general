@@ -55,7 +55,7 @@ Use this pattern when the task may take more than one step, require tool calls, 
 Before any tool calls for a multi-step task, send a short user-visible update that acknowledges the request and states the first step. Keep it to one or two sentences.
 ```
 
-For coding agents that expose separate message phases, you can be more explicit:
+For agents that expose separate message phases, you can be more explicit:
 
 ```text
 You must always start with an intermediary update before any content in the analysis channel if the task will require calling tools. The user update should acknowledge the request and explain your first step.
@@ -172,7 +172,7 @@ For frontend work, refer to the [example instructions](/api/docs/guides/frontend
 
 Give GPT-5.5 access to tools that let it check outputs when validation is possible.
 
-For coding agents, ask for concrete validation commands:
+For agents, ask for concrete validation commands:
 
 ```text
 After making changes, run the most relevant validation available:

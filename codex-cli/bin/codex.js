@@ -13,12 +13,12 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
 const PLATFORM_PACKAGE_BY_TARGET = {
-  "x86_64-unknown-linux-musl": "@openai/codex-linux-x64",
-  "aarch64-unknown-linux-musl": "@openai/codex-linux-arm64",
-  "x86_64-apple-darwin": "@openai/codex-darwin-x64",
-  "aarch64-apple-darwin": "@openai/codex-darwin-arm64",
-  "x86_64-pc-windows-msvc": "@openai/codex-win32-x64",
-  "aarch64-pc-windows-msvc": "@openai/codex-win32-arm64",
+  "x86_64-unknown-linux-musl": "codex-general-linux-x64",
+  "aarch64-unknown-linux-musl": "codex-general-linux-arm64",
+  "x86_64-apple-darwin": "codex-general-darwin-x64",
+  "aarch64-apple-darwin": "codex-general-darwin-arm64",
+  "x86_64-pc-windows-msvc": "codex-general-win32-x64",
+  "aarch64-pc-windows-msvc": "codex-general-win32-arm64",
 };
 
 const { platform, arch } = process;
@@ -75,7 +75,8 @@ if (!platformPackage) {
   throw new Error(`Unsupported target triple: ${targetTriple}`);
 }
 
-const codexBinaryName = process.platform === "win32" ? "codex.exe" : "codex";
+const codexBinaryName =
+  process.platform === "win32" ? "codex-general.exe" : "codex-general";
 const localVendorRoot = path.join(__dirname, "..", "vendor");
 const packageBinaryPath = (vendorRoot) =>
   path.join(vendorRoot, targetTriple, "bin", codexBinaryName);
@@ -117,8 +118,8 @@ if (!nativePackage) {
   const packageManager = detectPackageManager();
   const updateCommand =
     packageManager === "bun"
-      ? "bun install -g @openai/codex@latest"
-      : "npm install -g @openai/codex@latest";
+      ? "bun install -g codex-general@latest"
+      : "npm install -g codex-general@latest";
   throw new Error(
     `Missing optional dependency ${platformPackage}. Reinstall Codex: ${updateCommand}`,
   );

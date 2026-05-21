@@ -26,7 +26,7 @@ use std::sync::LazyLock;
 use toml::Value as TomlValue;
 
 /// The role name used when a caller omits `agent_type`.
-pub const DEFAULT_ROLE_NAME: &str = "default";
+pub const DEFAULT_ROLE_NAME: &str = "orchestrator";
 const AGENT_TYPE_UNAVAILABLE_ERROR: &str = "agent type is currently not available";
 
 /// Applies a named role layer to `config` while preserving caller-owned model selection.
@@ -382,9 +382,11 @@ mod built_in {
                 (
                     DEFAULT_ROLE_NAME.to_string(),
                     AgentRoleConfig {
-                        description: Some("Default agent.".to_string()),
-                        config_file: None,
+                        description: Some(r#"The orchestrator plans and decomposes an approach to the user's goal, and steers execution to completion, passing all validation gates.
+It avoids accumulating overly granular context, delegating all investigation and implementation to subagents and workers.
+It does not drive validation directly - the system injects validators at milestones to surface gaps."#.to_string()),
                         nickname_candidates: None,
+                        config_file: None,
                     }
                 ),
                 (
@@ -404,36 +406,32 @@ Rules:
                 (
                     "worker".to_string(),
                     AgentRoleConfig {
-                        description: Some(r#"Use for execution and production work.
-Typical tasks:
-- Implement part of a feature
-- Fix tests or bugs
-- Split large refactors into independent chunks
-Rules:
-- Explicitly assign **ownership** of the task (files / responsibility). When the subtask involves code changes, you should clearly specify which files or modules the worker is responsible for. This helps avoid merge conflicts and ensures accountability. For example, you can say "Worker 1 is responsible for updating the authentication module, while Worker 2 will handle the database layer." By defining clear ownership, you can delegate more effectively and reduce coordination overhead.
-- Always tell workers they are **not alone in the codebase**, and they should not revert the edits made by others, and they should adjust their implementation to accommodate the changes made by others. This is important because there may be multiple workers making changes in parallel, and they need to be aware of each other's work to avoid conflicts and ensure a cohesive final product."#.to_string()),
+                        description: Some(r#"Workers complete well-specified features with clear success criteria.
+They iterate until they believe the work is correct, then hand it off.
+The final judgment on correctness is not their call; an independent validator decides that."#.to_string()),
                         config_file: None,
                         nickname_candidates: None,
                     }
                 ),
-                // Awaiter is temp removed
-//                 (
-//                     "awaiter".to_string(),
-//                     AgentRoleConfig {
-//                         description: Some(r#"Use an `awaiter` agent EVERY TIME you must run a command that will take some very long time.
-// This includes, but not only:
-// * testing
-// * monitoring of a long running process
-// * explicit ask to wait for something
-//
-// Rules:
-// - When an awaiter is running, you can work on something else. If you need to wait for its completion, use the largest possible timeout.
-// - Be patient with the `awaiter`.
-// - Do not use an awaiter for every compilation/test if it won't take time. Only use if for long running commands.
-// - Close the awaiter when you're done with it."#.to_string()),
-//                         config_file: Some("awaiter.toml".to_string().parse().unwrap_or_default()),
-//                     }
-//                 )
+                (
+                    "validator".to_string(),
+                    AgentRoleConfig {
+                        description: Some(r#"Validators evaluate completed work for correctness and completeness, surfacing bugs and gaps.
+They do not implement fixes.
+They surface issues to the orchestrator, which creates fix features that future workers implement."#.to_string()),
+                        config_file: None,
+                        nickname_candidates: None,
+                    }
+                ),
+                (
+                    "awaiter".to_string(),
+                    AgentRoleConfig {
+                        description: Some(r#"Use an awaiter agent when monitoring a long-running command or waiting on a long-running external process would otherwise block orchestration.
+Awaiters report status and completion, but they do not own implementation or final validation."#.to_string()),
+                        config_file: Some("awaiter.toml".to_string().parse().unwrap_or_default()),
+                        nickname_candidates: None,
+                    }
+                ),
             ])
         });
         &CONFIG

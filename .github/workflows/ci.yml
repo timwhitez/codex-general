@@ -64,7 +64,7 @@ jobs:
           python3 ./scripts/stage_npm_packages.py \
             --release-version "$CODEX_VERSION" \
             --workflow-url "$WORKFLOW_URL" \
-            --package codex \
+            --package codex-general \
             --allow-legacy-codex-package \
             --output-dir "$OUTPUT_DIR"
           PACK_OUTPUT="${OUTPUT_DIR}/codex-npm-${CODEX_VERSION}.tgz"

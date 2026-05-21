@@ -15482,7 +15482,7 @@
                 "$ref": "#/definitions/v2/SessionSource"
               }
             ],
-            "description": "Origin of the thread (CLI, VSCode, codex exec, codex app-server, etc.)."
+            "description": "Origin of the thread (CLI, VSCode, codex-general exec, codex-general app-server, etc.)."
           },
           "status": {
             "allOf": [

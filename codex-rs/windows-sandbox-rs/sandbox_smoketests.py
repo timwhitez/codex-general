@@ -25,26 +25,26 @@ def _resolve_codex_cmd() -> List[str]:
     cargo_target = os.environ.get("CARGO_TARGET_DIR")
 
     candidates = [
-        ws_root / "target" / "debug" / "codex.exe",
-        ws_root / "target" / "release" / "codex.exe",
+        ws_root / "target" / "debug" / "codex-general.exe",
+        ws_root / "target" / "release" / "codex-general.exe",
     ]
     if cargo_target:
         cargo_base = Path(cargo_target)
         candidates.extend([
-            cargo_base / "debug" / "codex.exe",
-            cargo_base / "release" / "codex.exe",
+            cargo_base / "debug" / "codex-general.exe",
+            cargo_base / "release" / "codex-general.exe",
         ])
 
     for candidate in candidates:
         if candidate.exists():
             return [str(candidate)]
 
-    if shutil.which("codex"):
-        return ["codex"]
+    if shutil.which("codex-general"):
+        return ["codex-general"]
 
     raise FileNotFoundError(
         "Codex CLI not found. Build it first, e.g.\n"
-        "  cargo build -p codex-cli --release\n"
+        "  cargo build -p codex-cli --release --bin codex-general\n"
         "or for debug:\n"
         "  cargo build -p codex-cli\n"
     )

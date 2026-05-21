@@ -49,7 +49,7 @@ describe("CodexExec", () => {
     const child = createEarlyExitChild();
     spawnMock.mockReturnValue(child as unknown as child_process.ChildProcess);
 
-    const exec = new CodexExec("codex");
+    const exec = new CodexExec("codex-general");
     const runPromise = (async () => {
       for await (const _ of exec.run({ input: "hi" })) {
         // no-op
@@ -83,7 +83,7 @@ describe("CodexExec", () => {
       child.emit("exit", 0, null);
     });
 
-    const exec = new CodexExec("codex");
+    const exec = new CodexExec("codex-general");
     for await (const _ of exec.run({ input: "hi", images: ["img.png"], threadId: "thread-id" })) {
       // no-op
     }
@@ -112,7 +112,7 @@ describe("CodexExec", () => {
     process.env.CODEX_ENV_SHOULD_NOT_LEAK = "leak";
 
     try {
-      const exec = new CodexExec("codex", {
+      const exec = new CodexExec("codex-general", {
         CODEX_HOME: "/tmp/codex-home",
         CUSTOM_ENV: "custom",
       });
@@ -155,10 +155,10 @@ describe("CodexExec", () => {
     mkdirSync(binDir, { recursive: true });
     mkdirSync(pathDir, { recursive: true });
     writeFileSync(path.join(packageRoot, "codex-package.json"), "{}");
-    writeFileSync(path.join(binDir, "codex"), "");
+    writeFileSync(path.join(binDir, "codex-general"), "");
 
-    expect(resolveNativePackage(vendorRoot, "x86_64-unknown-linux-musl", "codex")).toEqual({
-      executablePath: path.join(binDir, "codex"),
+    expect(resolveNativePackage(vendorRoot, "x86_64-unknown-linux-musl", "codex-general")).toEqual({
+      executablePath: path.join(binDir, "codex-general"),
       pathDirs: [pathDir],
     });
   });
@@ -171,10 +171,10 @@ describe("CodexExec", () => {
     const pathDir = path.join(packageRoot, "path");
     mkdirSync(binDir, { recursive: true });
     mkdirSync(pathDir, { recursive: true });
-    writeFileSync(path.join(binDir, "codex"), "");
+    writeFileSync(path.join(binDir, "codex-general"), "");
 
-    expect(resolveNativePackage(vendorRoot, "x86_64-unknown-linux-musl", "codex")).toEqual({
-      executablePath: path.join(binDir, "codex"),
+    expect(resolveNativePackage(vendorRoot, "x86_64-unknown-linux-musl", "codex-general")).toEqual({
+      executablePath: path.join(binDir, "codex-general"),
       pathDirs: [pathDir],
     });
   });

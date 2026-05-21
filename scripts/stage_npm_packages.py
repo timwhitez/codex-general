@@ -15,7 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 BUILD_SCRIPT = REPO_ROOT / "codex-cli" / "scripts" / "build_npm_package.py"
 INSTALL_NATIVE_DEPS = REPO_ROOT / "codex-cli" / "scripts" / "install_native_deps.py"
 WORKFLOW_NAME = ".github/workflows/rust-release.yml"
-GITHUB_REPO = "openai/codex"
+GITHUB_REPO = "timwhitez/codex-general"
 
 _SPEC = importlib.util.spec_from_file_location("codex_build_npm_package", BUILD_SCRIPT)
 if _SPEC is None or _SPEC.loader is None:
@@ -152,8 +152,10 @@ def run_command(cmd: list[str]) -> None:
 
 
 def tarball_name_for_package(package: str, version: str) -> str:
+    if package == "codex-general":
+        return f"codex-npm-{version}.tgz"
     if package in CODEX_PLATFORM_PACKAGES:
-        platform = package.removeprefix("codex-")
+        platform = CODEX_PLATFORM_PACKAGES[package]["npm_tag"]
         return f"codex-npm-{platform}-{version}.tgz"
     return f"{package}-npm-{version}.tgz"
 

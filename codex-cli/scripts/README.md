@@ -6,7 +6,7 @@ example, to stage the CLI, responses proxy, and SDK packages for version `0.6.0`
 ```bash
 ./scripts/stage_npm_packages.py \
   --release-version 0.6.0 \
-  --package codex \
+  --package codex-general \
   --package codex-responses-api-proxy \
   --package codex-sdk
 ```
@@ -14,10 +14,11 @@ example, to stage the CLI, responses proxy, and SDK packages for version `0.6.0`
 This downloads the native package archive artifacts once, hydrates `vendor/` for each
 package, and writes tarballs to `dist/npm/`.
 
-When `--package codex` is provided, the staging helper builds the lightweight
-`@openai/codex` meta package plus all platform-native `@openai/codex` variants
+When `--package codex-general` is provided, the staging helper builds the lightweight
+`codex-general` meta package plus all platform-native `codex-general` variants
 that are later published under platform-specific dist-tags.
 
 If you need to invoke `build_npm_package.py` directly, run
-`codex-cli/scripts/install_native_deps.py --component codex-package` first and pass
-`--vendor-src` pointing to the directory that contains the populated `vendor/` tree.
+`codex-cli/scripts/install_native_deps.py --workflow-url <workflow-url> --component codex-package`
+first and pass `--vendor-src` pointing to the directory that contains the populated
+`vendor/` tree.

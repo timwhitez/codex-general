@@ -1,6 +1,6 @@
 # OpenAI Codex Python SDK (Experimental)
 
-Experimental Python SDK for `codex app-server` JSON-RPC v2 over stdio, with a small default surface optimized for real scripts and apps.
+Experimental Python SDK for `codex-general app-server` JSON-RPC v2 over stdio, with a small default surface optimized for real scripts and apps.
 
 The generated wire-model layer is sourced from the pinned `openai-codex-cli-bin`
 runtime package and exposed as Pydantic models with snake_case Python fields

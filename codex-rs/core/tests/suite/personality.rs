@@ -38,8 +38,8 @@ use wiremock::BodyPrintLimit;
 use wiremock::MockServer;
 
 const LOCAL_FRIENDLY_TEMPLATE: &str =
-    "You optimize for team morale and being a supportive teammate as much as code quality.";
-const LOCAL_PRAGMATIC_TEMPLATE: &str = "You are a deeply pragmatic, effective software engineer.";
+    "You optimize for clarity, confidence, and steady collaboration as much as task quality.";
+const LOCAL_PRAGMATIC_TEMPLATE: &str = "You are a pragmatic, effective agent. You communicate directly, keep momentum, and focus on the smallest action that makes the user's goal real.";
 
 fn read_only_text_turn(
     test: &TestCodex,

@@ -68,7 +68,7 @@ with Codex() as codex:
 
 What happened:
 
-- `Codex()` started and initialized `codex app-server`.
+- `Codex()` started and initialized `codex-general app-server`.
 - `thread_start(...)` created a thread.
 - `thread.run("...")` started a turn, consumed events until completion, and returned `TurnResult` with turn metadata, final assistant response, collected items, and usage.
 - `result.final_response` is `None` when no final-answer or phase-less assistant message item completes for the turn.

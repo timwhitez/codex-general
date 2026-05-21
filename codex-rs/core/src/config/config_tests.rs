@@ -7084,11 +7084,11 @@ model = "gpt-5.2"
     )
     .await?;
     tokio::fs::write(
-        standalone_agents_dir.join("reviewer.toml"),
+        standalone_agents_dir.join("validator.toml"),
         r#"
-name = "reviewer"
-description = "Review role"
-developer_instructions = "Review carefully"
+name = "validator"
+description = "Validate role"
+developer_instructions = "Validate carefully"
 model = "gpt-5.2"
 "#,
     )
@@ -7106,9 +7106,9 @@ model = "gpt-5.2"
     assert_eq!(
         config
             .agent_roles
-            .get("reviewer")
+            .get("validator")
             .and_then(|role| role.description.as_deref()),
-        Some("Review role")
+        Some("Validate role")
     );
     assert!(
         config
@@ -7195,8 +7195,8 @@ model = "gpt-5.2"
         r#"[agents.researcher]
 config_file = "./agents/researcher.toml"
 
-[agents.reviewer]
-description = "Review role"
+[agents.validator]
+description = "Validate role"
 "#,
     )
     .await?;
@@ -7210,9 +7210,9 @@ description = "Review role"
     assert_eq!(
         config
             .agent_roles
-            .get("reviewer")
+            .get("validator")
             .and_then(|role| role.description.as_deref()),
-        Some("Review role")
+        Some("Validate role")
     );
     assert!(
         config
@@ -7254,11 +7254,11 @@ developer_instructions = "Research carefully"
     )
     .await?;
     tokio::fs::write(
-        standalone_agents_dir.join("reviewer.toml"),
+        standalone_agents_dir.join("validator.toml"),
         r#"
-name = "reviewer"
-description = "Review role"
-developer_instructions = "Review carefully"
+name = "validator"
+description = "Validate role"
+developer_instructions = "Validate carefully"
 "#,
     )
     .await?;
@@ -7275,9 +7275,9 @@ developer_instructions = "Review carefully"
     assert_eq!(
         config
             .agent_roles
-            .get("reviewer")
+            .get("validator")
             .and_then(|role| role.description.as_deref()),
-        Some("Review role")
+        Some("Validate role")
     );
     assert!(
         config
@@ -7338,7 +7338,7 @@ config_file = "./agents/researcher.toml"
 async fn loads_legacy_split_agent_roles_from_config_toml() -> std::io::Result<()> {
     let codex_home = TempDir::new()?;
     let researcher_path = codex_home.path().join("agents").join("researcher.toml");
-    let reviewer_path = codex_home.path().join("agents").join("reviewer.toml");
+    let validator_path = codex_home.path().join("agents").join("validator.toml");
     tokio::fs::create_dir_all(
         researcher_path
             .parent()
@@ -7351,8 +7351,8 @@ async fn loads_legacy_split_agent_roles_from_config_toml() -> std::io::Result<()
     )
     .await?;
     tokio::fs::write(
-        &reviewer_path,
-        "developer_instructions = \"Review carefully\"\nmodel = \"gpt-4.1\"",
+        &validator_path,
+        "developer_instructions = \"Validate carefully\"\nmodel = \"gpt-4.1\"",
     )
     .await?;
     tokio::fs::write(
@@ -7362,9 +7362,9 @@ description = "Research role"
 config_file = "./agents/researcher.toml"
 nickname_candidates = ["Hypatia", "Noether"]
 
-[agents.reviewer]
-description = "Review role"
-config_file = "./agents/reviewer.toml"
+[agents.validator]
+description = "Validate role"
+config_file = "./agents/validator.toml"
 nickname_candidates = ["Atlas"]
 "#,
     )
@@ -7401,21 +7401,21 @@ nickname_candidates = ["Atlas"]
     assert_eq!(
         config
             .agent_roles
-            .get("reviewer")
+            .get("validator")
             .and_then(|role| role.description.as_deref()),
-        Some("Review role")
+        Some("Validate role")
     );
     assert_eq!(
         config
             .agent_roles
-            .get("reviewer")
+            .get("validator")
             .and_then(|role| role.config_file.as_ref()),
-        Some(&reviewer_path)
+        Some(&validator_path)
     );
     assert_eq!(
         config
             .agent_roles
-            .get("reviewer")
+            .get("validator")
             .and_then(|role| role.nickname_candidates.as_ref())
             .map(|candidates| candidates.iter().map(String::as_str).collect::<Vec<_>>()),
         Some(vec!["Atlas"])
@@ -7466,7 +7466,7 @@ developer_instructions = "Research carefully"
         .join("packages")
         .join(".codex")
         .join("agents")
-        .join("review")
+        .join("validate")
         .join("nested.toml");
     std::fs::create_dir_all(
         nested_agent
@@ -7476,10 +7476,10 @@ developer_instructions = "Research carefully"
     std::fs::write(
         &nested_agent,
         r#"
-name = "reviewer"
+name = "validator"
 description = "from nested"
 nickname_candidates = ["Atlas"]
-developer_instructions = "Review carefully"
+developer_instructions = "Validate carefully"
 "#,
     )?;
 
@@ -7523,14 +7523,14 @@ developer_instructions = "Write carefully"
     assert_eq!(
         config
             .agent_roles
-            .get("reviewer")
+            .get("validator")
             .and_then(|role| role.description.as_deref()),
         Some("from nested")
     );
     assert_eq!(
         config
             .agent_roles
-            .get("reviewer")
+            .get("validator")
             .and_then(|role| role.nickname_candidates.as_ref())
             .map(|candidates| candidates.iter().map(String::as_str).collect::<Vec<_>>()),
         Some(vec!["Atlas"])
