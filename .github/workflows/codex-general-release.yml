@@ -208,7 +208,21 @@ jobs:
           if [[ "${RUNNER_OS}" == "Windows" ]]; then
             build_args+=(--bin codex-command-runner --bin codex-windows-sandbox-setup)
           fi
+
+          (
+            while true; do
+              sleep 60
+              echo "cargo build still running at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            done
+          ) &
+          keepalive_pid="$!"
+          trap 'kill "${keepalive_pid}" 2>/dev/null || true' EXIT
+
           cargo build --target "$TARGET" --release "${build_args[@]}"
+
+          kill "${keepalive_pid}" 2>/dev/null || true
+          wait "${keepalive_pid}" 2>/dev/null || true
+          trap - EXIT
 
       - name: Verify binary
         shell: bash
