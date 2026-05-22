@@ -378,11 +378,7 @@ pub async fn run_main(cli: Cli, arg0_paths: Arg0DispatchPaths) -> anyhow::Result
     let run_cloud_requirements = cloud_requirements.clone();
 
     let model_provider = if oss {
-        let resolved = resolve_oss_provider(
-            oss_provider.as_deref(),
-            &config_toml,
-            /*config_profile*/ None,
-        );
+        let resolved = resolve_oss_provider(oss_provider.as_deref(), &config_toml);
 
         if let Some(provider) = resolved {
             Some(provider)
@@ -421,7 +417,6 @@ pub async fn run_main(cli: Cli, arg0_paths: Arg0DispatchPaths) -> anyhow::Result
         workspace_roots: None,
         model_provider: model_provider.clone(),
         service_tier: None,
-        config_profile: None,
         codex_self_exe: arg0_paths.codex_self_exe.clone(),
         codex_linux_sandbox_exe: arg0_paths.codex_linux_sandbox_exe.clone(),
         main_execve_wrapper_exe: arg0_paths.main_execve_wrapper_exe.clone(),
