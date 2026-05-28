@@ -77,10 +77,10 @@ jobs:
             platform: windows
             cargo_jobs: "2"
           - label: mac-x64
-            runner: macos-15-intel
+            runner: macos-15-large
             target: x86_64-apple-darwin
             platform: macos
-            cargo_jobs: "1"
+            cargo_jobs: "2"
           - label: mac-arm64
             runner: macos-15
             target: aarch64-apple-darwin
