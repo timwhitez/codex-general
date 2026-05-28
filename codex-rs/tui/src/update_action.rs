@@ -14,9 +14,9 @@ pub enum UpdateAction {
     BunGlobalLatest,
     /// Update via `brew upgrade codex`.
     BrewUpgrade,
-    /// Update via `curl -fsSL https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.sh | sh`.
+    /// Update via `curl -fsSL https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.sh | CODEX_NON_INTERACTIVE=1 sh`.
     StandaloneUnix,
-    /// Update via `irm https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.ps1|iex`.
+    /// Update via `$env:CODEX_NON_INTERACTIVE=1; irm https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.ps1 | iex`.
     StandaloneWindows,
 }
 
@@ -45,14 +45,16 @@ impl UpdateAction {
                 "sh",
                 &[
                     "-c",
-                    "curl -fsSL https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.sh | sh",
+                    "curl -fsSL https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.sh | CODEX_NON_INTERACTIVE=1 sh",
                 ],
             ),
             UpdateAction::StandaloneWindows => (
                 "powershell",
                 &[
+                    "-ExecutionPolicy",
+                    "Bypass",
                     "-c",
-                    "irm https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.ps1|iex",
+                    "$env:CODEX_NON_INTERACTIVE=1; irm https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.ps1 | iex",
                 ],
             ),
         }
@@ -143,7 +145,7 @@ mod tests {
                 "sh",
                 &[
                     "-c",
-                    "curl -fsSL https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.sh | sh",
+                    "curl -fsSL https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.sh | CODEX_NON_INTERACTIVE=1 sh"
                 ][..],
             )
         );
@@ -152,8 +154,10 @@ mod tests {
             (
                 "powershell",
                 &[
+                    "-ExecutionPolicy",
+                    "Bypass",
                     "-c",
-                    "irm https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.ps1|iex",
+                    "$env:CODEX_NON_INTERACTIVE=1; irm https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.ps1 | iex"
                 ][..],
             )
         );
