@@ -53,7 +53,13 @@ jobs:
         working-directory: codex-rs
     env:
       TARGET: ${{ matrix.target }}
-      CARGO_PROFILE_RELEASE_LTO: thin
+      RELEASE_PROFILE: release-gh
+      CARGO_BUILD_JOBS: "2"
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_RELEASE_LTO: "off"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+      CARGO_PROFILE_RELEASE_GH_LTO: "off"
+      CARGO_PROFILE_RELEASE_GH_CODEGEN_UNITS: "16"
       AWS_LC_SYS_NO_JITTER_ENTROPY: "1"
       AWS_LC_SYS_NO_JITTER_ENTROPY_x86_64_unknown_linux_musl: "1"
     strategy:
@@ -81,6 +87,31 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Print runner specs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Runner: ${RUNNER_NAME:-unknown}"
+          echo "OS: ${RUNNER_OS:-unknown}"
+          if [[ "${RUNNER_OS}" == "Linux" ]]; then
+            cpu_model="$(lscpu | awk -F: '/Model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}')"
+            total_ram="$(awk '/MemTotal/ {printf "%.1f GiB\n", $2 / 1024 / 1024}' /proc/meminfo)"
+            echo "Kernel: $(uname -a)"
+            echo "CPU model: ${cpu_model}"
+            echo "Logical CPUs: $(nproc)"
+            echo "Total RAM: ${total_ram}"
+          elif [[ "${RUNNER_OS}" == "macOS" ]]; then
+            total_ram="$(sysctl -n hw.memsize | awk '{printf "%.1f GiB\n", $1 / 1024 / 1024 / 1024}')"
+            echo "macOS: $(sw_vers -productName) $(sw_vers -productVersion)"
+            echo "Hardware model: $(sysctl -n hw.model)"
+            echo "CPU architecture: $(uname -m)"
+            echo "Logical CPUs: $(sysctl -n hw.logicalcpu)"
+            echo "Total RAM: ${total_ram}"
+          fi
+          echo "Disk usage:"
+          df -h .
+
       - name: Install Linux build dependencies
         if: ${{ matrix.platform == 'linux' }}
         shell: bash
@@ -102,7 +133,7 @@ jobs:
         if: ${{ matrix.platform == 'windows' }}
         uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
 
-      - uses: dtolnay/rust-toolchain@a0b273b48ed29de4470960879e8381ff45632f26 # 1.93.0
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
         with:
           targets: ${{ env.TARGET }}
 
@@ -183,7 +214,7 @@ jobs:
 
       - name: Configure musl rusty_v8 artifact overrides and verify checksums
         if: ${{ matrix.platform == 'linux' }}
-        uses: ./.github/actions/setup-rusty-v8-musl
+        uses: ./.github/actions/setup-rusty-v8
         with:
           target: ${{ env.TARGET }}
 
@@ -192,9 +223,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo build --target "$TARGET" --release --bin bwrap
+          cargo build --target "$TARGET" --profile "$RELEASE_PROFILE" --timings --bin bwrap
 
-          bwrap_path="target/${TARGET}/release/bwrap"
+          bwrap_path="target/${TARGET}/${RELEASE_PROFILE}/bwrap"
           test -x "$bwrap_path"
           digest="$(sha256sum "$bwrap_path" | awk '{print $1}')"
           echo "CODEX_BWRAP_SHA256=${digest}" >> "$GITHUB_ENV"
@@ -218,11 +249,30 @@ jobs:
           keepalive_pid="$!"
           trap 'kill "${keepalive_pid}" 2>/dev/null || true' EXIT
 
-          cargo build --target "$TARGET" --release "${build_args[@]}"
+          cargo_status=0
+          cargo build --target "$TARGET" --profile "$RELEASE_PROFILE" --timings "${build_args[@]}" || cargo_status="$?"
 
           kill "${keepalive_pid}" 2>/dev/null || true
           wait "${keepalive_pid}" 2>/dev/null || true
           trap - EXIT
+
+          if [[ "${cargo_status}" -ne 0 ]]; then
+            echo "cargo build failed with status ${cargo_status}"
+            if [[ "${RUNNER_OS}" == "Linux" ]]; then
+              free -h || true
+              df -h . || true
+              ps -eo pid,ppid,stat,pcpu,pmem,rss,comm,args --sort=-rss | head -40 || true
+            fi
+            exit "${cargo_status}"
+          fi
+
+      - name: Upload Cargo timings
+        if: ${{ always() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codex-general-cargo-timings-${{ matrix.target }}
+          path: codex-rs/target/**/cargo-timings/cargo-timing.html
+          if-no-files-found: warn
 
       - name: Verify binary
         shell: bash
@@ -233,10 +283,10 @@ jobs:
             exe_suffix=".exe"
           fi
 
-          binary="target/${TARGET}/release/codex-general${exe_suffix}"
+          binary="target/${TARGET}/${RELEASE_PROFILE}/codex-general${exe_suffix}"
           "$binary" --version
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
-            test -x "target/${TARGET}/release/bwrap"
+            test -x "target/${TARGET}/${RELEASE_PROFILE}/bwrap"
           fi
 
       - name: Build installer package archives
@@ -246,7 +296,8 @@ jobs:
           bash "${GITHUB_WORKSPACE}/.github/scripts/build-codex-package-archive.sh" \
             --target "$TARGET" \
             --bundle primary \
-            --entrypoint-dir "target/${TARGET}/release" \
+            --entrypoint-dir "target/${TARGET}/${RELEASE_PROFILE}" \
+            --cargo-profile "$RELEASE_PROFILE" \
             --archive-dir "dist/${TARGET}"
 
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0

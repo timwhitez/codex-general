@@ -12,21 +12,21 @@ If you want Codex in your code editor (VS Code, Cursor, Windsurf), <a href="http
 
 ## Quickstart
 
-### Installing and running Codex CLI
+### Installing and running Codex General CLI
 
-Run the following on Mac or Linux to install Codex CLI:
+Run the following on Mac or Linux to install Codex General CLI:
 
 ```shell
-curl -fsSL https://chatgpt.com/codex/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.sh | sh
 ```
 
-Run the following on Windows to install Codex CLI:
+Run the following on Windows to install Codex General CLI:
 
 ```
-powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/timwhitez/codex-general/main/scripts/install/install.ps1 | iex"
 ```
 
-Codex CLI can also be installed via the following package managers:
+Codex General CLI can also be installed via the following package managers:
 
 ```shell
 # Install using npm
@@ -41,13 +41,14 @@ Then simply run `codex-general` to get started.
 Each GitHub Release contains many executables, but in practice, you likely want one of these:
 
 - macOS
-  - Apple Silicon/arm64: `codex-general-aarch64-apple-darwin.tar.gz`
-  - x86_64 (older Mac hardware): `codex-general-x86_64-apple-darwin.tar.gz`
+  - Apple Silicon/arm64: `codex-package-aarch64-apple-darwin.tar.gz`
+  - x86_64 (older Mac hardware): `codex-package-x86_64-apple-darwin.tar.gz`
 - Linux
-  - x86_64: `codex-general-x86_64-unknown-linux-musl.tar.gz`
-  - arm64: `codex-general-aarch64-unknown-linux-musl.tar.gz`
+  - x86_64: `codex-package-x86_64-unknown-linux-musl.tar.gz`
+- Windows
+  - x86_64: `codex-package-x86_64-pc-windows-msvc.tar.gz`
 
-Each archive contains a single entry with the platform baked into the name (e.g., `codex-general-x86_64-unknown-linux-musl`), so you likely want to rename it to `codex-general` after extracting it.
+Each package archive contains `bin/codex-general` or `bin/codex-general.exe`, helper binaries, and package metadata.
 
 </details>
 
