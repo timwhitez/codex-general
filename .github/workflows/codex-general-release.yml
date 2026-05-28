@@ -45,7 +45,7 @@ jobs:
     needs: tag-check
     name: Build - ${{ matrix.label }}
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 240
+    timeout-minutes: 360
     permissions:
       contents: read
     defaults:
@@ -77,10 +77,10 @@ jobs:
             platform: windows
             cargo_jobs: "2"
           - label: mac-x64
-            runner: macos-15-large
+            runner: macos-15-intel
             target: x86_64-apple-darwin
             platform: macos
-            cargo_jobs: "2"
+            cargo_jobs: "1"
           - label: mac-arm64
             runner: macos-15
             target: aarch64-apple-darwin
