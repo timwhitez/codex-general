@@ -3223,6 +3223,7 @@ dependencies = [
  "tokio",
 ]
 
+[[package]]
 name = "codex-memories-read"
 version = "2026.5.28"
 dependencies = [
