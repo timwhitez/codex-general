@@ -54,7 +54,7 @@ jobs:
     env:
       TARGET: ${{ matrix.target }}
       RELEASE_PROFILE: release-gh
-      CARGO_BUILD_JOBS: "2"
+      CARGO_BUILD_JOBS: ${{ matrix.cargo_jobs }}
       CARGO_INCREMENTAL: "0"
       CARGO_PROFILE_RELEASE_LTO: "off"
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
@@ -70,18 +70,22 @@ jobs:
             runner: ubuntu-latest
             target: x86_64-unknown-linux-musl
             platform: linux
+            cargo_jobs: "2"
           - label: win-x64
             runner: windows-latest
             target: x86_64-pc-windows-msvc
             platform: windows
+            cargo_jobs: "2"
           - label: mac-x64
             runner: macos-15-intel
             target: x86_64-apple-darwin
             platform: macos
+            cargo_jobs: "1"
           - label: mac-arm64
             runner: macos-15
             target: aarch64-apple-darwin
             platform: macos
+            cargo_jobs: "1"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -249,8 +253,13 @@ jobs:
           keepalive_pid="$!"
           trap 'kill "${keepalive_pid}" 2>/dev/null || true' EXIT
 
-          cargo_status=0
-          cargo build --target "$TARGET" --profile "$RELEASE_PROFILE" --timings "${build_args[@]}" || cargo_status="$?"
+          mkdir -p target/build-logs
+          build_log="target/build-logs/codex-general-${TARGET}.log"
+
+          set +e
+          cargo build --target "$TARGET" --profile "$RELEASE_PROFILE" --timings "${build_args[@]}" 2>&1 | tee "$build_log"
+          cargo_status="${PIPESTATUS[0]}"
+          set -e
 
           kill "${keepalive_pid}" 2>/dev/null || true
           wait "${keepalive_pid}" 2>/dev/null || true
@@ -258,6 +267,11 @@ jobs:
 
           if [[ "${cargo_status}" -ne 0 ]]; then
             echo "cargo build failed with status ${cargo_status}"
+            echo "::group::Last 200 cargo build lines"
+            tail -200 "$build_log" || true
+            echo "::endgroup::"
+            error_tail="$(tail -40 "$build_log" | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')"
+            echo "::error title=Cargo build failed on ${TARGET}::${error_tail}"
             if [[ "${RUNNER_OS}" == "Linux" ]]; then
               free -h || true
               df -h . || true
@@ -265,6 +279,14 @@ jobs:
             fi
             exit "${cargo_status}"
           fi
+
+      - name: Upload Cargo build log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codex-general-build-log-${{ matrix.target }}
+          path: codex-rs/target/build-logs/*.log
+          if-no-files-found: warn
 
       - name: Upload Cargo timings
         if: ${{ always() }}
