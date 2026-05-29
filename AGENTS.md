@@ -13,6 +13,16 @@ prompt, packaging, install, or release behavior, keep these project-specific inv
 - After role/persona work, scan for stale base-persona or role residues such as `coding agent`, `software engineer`, `code-review` default wording, `master`, and agent-role `reviewer`. Functional code-review, approvals reviewer, guardian reviewer, git `master`, and desired `worker` references may remain when they are not agent-persona roles.
 - Do not include local planning files such as `prompt-generalization-plan.md` or `prompt-generalization-update.md` in commits unless the user explicitly asks for them.
 
+### Codex General GitHub release workflow
+
+- The fork release workflow is `.github/workflows/codex-general-release.yml`; keep upstream `.github/workflows/rust-release.yml` from running on `rust-v*` tag pushes in this fork.
+- Date-based releases use tags like `rust-v2026.5.28`, and the tag version must match `codex-rs/Cargo.toml`.
+- Full fork releases have been validated on GitHub-hosted runners for `x86_64-unknown-linux-musl`, `x86_64-pc-windows-msvc`, `x86_64-apple-darwin`, and `aarch64-apple-darwin`.
+- Do not run `.github/actions/setup-rusty-v8` for Windows release builds. That action downloads Unix-style `librusty_v8_release_<target>.a.gz` artifacts; Windows rusty_v8 assets use the `.lib.gz` / `ptrcomp_sandbox_release` naming path and the package scripts intentionally do not fetch Codex-built V8 artifacts for Windows.
+- On GitHub-hosted macOS runners, keep macOS release Cargo build pressure low. `macos-15-intel` for `x86_64-apple-darwin` needs `CARGO_BUILD_JOBS=1` and a long build timeout; `macos-15-large` is a paid larger runner and may fail before starting if account billing/spending limits do not allow it. `aarch64-apple-darwin` is validated on `macos-15` with `CARGO_BUILD_JOBS=1`.
+- Keep release build logs uploaded with `if: always()` and emit a `::error` tail when Cargo fails. GitHub public annotations may otherwise show only `exit code 101`, which is not enough to diagnose release failures.
+- After a successful release, verify the GitHub Release contains four platform `codex-package-*.tar.gz` assets, matching `.tar.zst` assets, `install.sh`, `install.ps1`, `codex-package_SHA256SUMS`, and `SHA256SUMS`. At minimum, download `codex-package_SHA256SUMS`, `SHA256SUMS`, `install.sh`, `install.ps1`, and the Linux musl `.tar.gz`; run `sha256sum -c ... --ignore-missing`, extract the Linux package, verify `codex-package.json` has `"variant": "codex-general"` and `"entrypoint": "bin/codex-general"`, and run `bin/codex-general --version`, `codex-path/rg --version`, and `codex-resources/bwrap --version`.
+
 In the codex-rs folder where the rust code lives:
 
 - Crate names are prefixed with `codex-`. For example, the `core` folder's crate is named `codex-core`
