@@ -60,6 +60,7 @@ jobs:
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
       CARGO_PROFILE_RELEASE_GH_LTO: "off"
       CARGO_PROFILE_RELEASE_GH_CODEGEN_UNITS: "16"
+      RUSTUP_TOOLCHAIN: "1.95.0"
       AWS_LC_SYS_NO_JITTER_ENTROPY: "1"
       AWS_LC_SYS_NO_JITTER_ENTROPY_x86_64_unknown_linux_musl: "1"
     strategy:
@@ -137,9 +138,64 @@ jobs:
         if: ${{ matrix.platform == 'windows' }}
         uses: facebook/install-dotslash@1e4e7b3e07eaca387acb98f1d4720e0bee8dbb6a # v2
 
-      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
-        with:
-          targets: ${{ env.TARGET }}
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p target/build-logs
+          toolchain_log="target/build-logs/rust-toolchain-${TARGET}.log"
+
+          install_rust() {
+            rustup toolchain install "$RUSTUP_TOOLCHAIN" \
+              --profile minimal \
+              --component clippy \
+              --component rustfmt \
+              --component rust-src \
+              --target "$TARGET"
+          }
+
+          status=1
+          for attempt in 1 2 3; do
+            echo "Installing Rust ${RUSTUP_TOOLCHAIN} for ${TARGET} (attempt ${attempt}/3)" | tee -a "$toolchain_log"
+            set +e
+            install_rust 2>&1 | tee -a "$toolchain_log"
+            status="${PIPESTATUS[0]}"
+            set -e
+
+            if [[ "${status}" -eq 0 ]]; then
+              break
+            fi
+
+            echo "rustup toolchain install failed with status ${status}" | tee -a "$toolchain_log"
+            if [[ "${attempt}" -lt 3 ]]; then
+              sleep "$((attempt * 30))"
+            fi
+          done
+
+          if [[ "${status}" -ne 0 ]]; then
+            echo "::group::Last 120 rustup lines"
+            tail -120 "$toolchain_log" || true
+            echo "::endgroup::"
+            error_tail="$(tail -40 "$toolchain_log" | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')"
+            echo "::error title=Rust toolchain install failed on ${TARGET}::${error_tail}"
+            exit "${status}"
+          fi
+
+          {
+            echo "::group::Rust toolchain diagnostics"
+            rustup show
+            rustup toolchain list
+            rustc +"$RUSTUP_TOOLCHAIN" -vV
+            cargo +"$RUSTUP_TOOLCHAIN" -vV
+            rustup target list --toolchain "$RUSTUP_TOOLCHAIN" --installed
+            echo "::endgroup::"
+          } 2>&1 | tee -a "$toolchain_log"
+
+          if ! rustup target list --toolchain "$RUSTUP_TOOLCHAIN" --installed | grep -Fx "$TARGET" >/dev/null; then
+            echo "::error title=Rust target missing on ${TARGET}::${TARGET} is not installed for ${RUSTUP_TOOLCHAIN}"
+            exit 1
+          fi
 
       - name: Use hermetic Cargo home
         if: ${{ matrix.platform == 'linux' }}
@@ -227,7 +283,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo build --target "$TARGET" --profile "$RELEASE_PROFILE" --timings --bin bwrap
+          cargo +"$RUSTUP_TOOLCHAIN" build --target "$TARGET" --profile "$RELEASE_PROFILE" --timings --bin bwrap
 
           bwrap_path="target/${TARGET}/${RELEASE_PROFILE}/bwrap"
           test -x "$bwrap_path"
@@ -257,7 +313,7 @@ jobs:
           build_log="target/build-logs/codex-general-${TARGET}.log"
 
           set +e
-          cargo build --target "$TARGET" --profile "$RELEASE_PROFILE" --timings "${build_args[@]}" 2>&1 | tee "$build_log"
+          cargo +"$RUSTUP_TOOLCHAIN" build --target "$TARGET" --profile "$RELEASE_PROFILE" --timings "${build_args[@]}" 2>&1 | tee "$build_log"
           cargo_status="${PIPESTATUS[0]}"
           set -e
 
@@ -276,6 +332,11 @@ jobs:
               free -h || true
               df -h . || true
               ps -eo pid,ppid,stat,pcpu,pmem,rss,comm,args --sort=-rss | head -40 || true
+            elif [[ "${RUNNER_OS}" == "macOS" ]]; then
+              sysctl hw.memsize hw.logicalcpu hw.physicalcpu || true
+              df -h . || true
+              du -sh target 2>/dev/null || true
+              ps aux | sort -nrk 4 | head -40 || true
             fi
             exit "${cargo_status}"
           fi
