@@ -37,7 +37,7 @@ Codex sends it as a bearer token on the registration request. For example:
 
 ```sh
 CODEX_API_KEY="$OPENAI_API_KEY" \
-codex exec-server \
+codex-general exec-server \
   --remote ... \
   --environment-id "$ENVIRONMENT_ID"
 ```

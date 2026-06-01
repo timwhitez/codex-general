@@ -66,7 +66,7 @@ codex-general sandbox [COMMAND]...
 codex-general sandbox --log-denials [COMMAND]...
 ```
 
-`codex sandbox` also accepts `--profile NAME` (`-p NAME`) to layer
+`codex-general sandbox` also accepts `--profile NAME` (`-p NAME`) to layer
 `$CODEX_HOME/NAME.config.toml` onto the base user config for the sandboxed
 command.
 
