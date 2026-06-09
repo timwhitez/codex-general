@@ -1,4 +1,4 @@
-# Codex CLI (Rust Implementation)
+# Codex CLI
 
 We provide Codex CLI as a standalone executable to ensure a zero-dependency install.
 
