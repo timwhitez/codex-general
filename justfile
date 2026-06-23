@@ -36,13 +36,13 @@ app-server-test-client *args:
     cargo build -p codex-cli
     cargo run -p codex-app-server-test-client -- --codex-bin ./target/debug/codex-general "$@"
 
-# Format the justfile, Rust, Python SDK code, and Python scripts.
+# Format the justfile, Rust, Bazel/Starlark, Python SDK code, and Python scripts.
 fmt:
-    {{ python }} ../scripts/format.py
+    @{{ python }} ../scripts/format.py
 
 # Check formatting without modifying files.
 fmt-check:
-    {{ python }} ../scripts/format.py --check
+    @{{ python }} ../scripts/format.py --check
 
 fix *args:
     cargo clippy --fix --tests --allow-dirty {args}
@@ -75,11 +75,11 @@ install:
 # there should be no need to add `--all-features`.
 [unix]
 test *args:
-    RUST_MIN_STACK={{ rust_min_stack }} cargo nextest run --no-fail-fast "$@"
+    RUST_MIN_STACK={{ rust_min_stack }} NEXTEST_PROFILE=local cargo nextest run --no-fail-fast "$@"
 
 [windows]
 test *args:
-    $env:RUST_MIN_STACK = "{{ rust_min_stack }}"; cargo nextest run --no-fail-fast @($args | Select-Object -Skip 1)
+    $env:RUST_MIN_STACK = "{{ rust_min_stack }}"; $env:NEXTEST_PROFILE = "local"; cargo nextest run --no-fail-fast @($args | Select-Object -Skip 1)
 
 # Run from the repository root so scripts that resolve paths from `cwd` see
 # the same layout they use in GitHub Actions.
@@ -105,7 +105,7 @@ bazel-codex *args:
 
 [windows]
 bazel-codex *args:
-    bazel run //codex-rs/cli:codex --run_under='cd /d "{{ invocation_directory_native() }}" &&' -- @($args | Select-Object -Skip 1)
+    bazel run //codex-rs/cli:codex-general --run_under='cd /d "{{ invocation_directory_native() }}" &&' -- @($args | Select-Object -Skip 1)
 
 [no-cd]
 bazel-lock-update:

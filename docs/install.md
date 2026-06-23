@@ -26,6 +26,8 @@ rustup component add rustfmt
 rustup component add clippy
 # Install helper tools used by the workspace justfile:
 cargo install --locked just
+# DotSlash fetches pinned development tools such as buildifier on first use.
+cargo install --locked dotslash
 # Install nextest for the `just test` helper.
 cargo install --locked cargo-nextest
 
@@ -54,10 +56,10 @@ Codex is written in Rust, so it honors the `RUST_LOG` environment variable to co
 The TUI records diagnostics in bounded local stores by default. Set `log_dir` explicitly to enable a plaintext TUI log for a run:
 
 ```bash
-codex -c log_dir=./.codex-log
+codex-general -c log_dir=./.codex-log
 tail -F ./.codex-log/codex-tui.log
 ```
 
-The non-interactive mode (`codex exec`) defaults to `RUST_LOG=error`, but messages are printed inline, so there is no need to monitor a separate file.
+The non-interactive mode (`codex-general exec`) defaults to `RUST_LOG=error`, but messages are printed inline, so there is no need to monitor a separate file.
 
 See the Rust documentation on [`RUST_LOG`](https://docs.rs/env_logger/latest/env_logger/#enabling-logging) for more information on the configuration options.
