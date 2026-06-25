@@ -50,8 +50,7 @@ path: string | null, /**
 cwd: AbsolutePathBuf, /**
  * Version of the CLI that created the thread.
  */
-cliVersion: string,
-/**
+cliVersion: string, /**
  * Origin of the thread (CLI, VSCode, codex-general exec, codex-general app-server, etc.).
  */
 source: SessionSource, /**
